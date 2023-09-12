@@ -32,6 +32,17 @@ async function decryptMessage(encryptedMessage, privateKey) {
   return decryptedMessage;
 }
 
+function decryptAllMessages(sharedKey, messages) {
+	const decryptedMessages = messages.map((message) => {
+		const decryptedMessage = aesDecrypt(
+			JSON.parse(message),
+			sharedKey
+		);
+		return JSON.parse(decryptedMessage);
+	});
+	return decryptedMessages;
+}
+
 function aesEncrypt(message, sharedKey) {
   const iv = crypto.randomBytes(16); // Random initialization vector
   const cipher = crypto.createCipheriv(
@@ -132,4 +143,5 @@ module.exports = {
   verifyMessage,
   poseidonHash,
   createECDHIdentity,
+  decryptAllMessages
 };

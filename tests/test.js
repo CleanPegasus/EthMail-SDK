@@ -38,8 +38,12 @@ async function main() {
   await wallet2.completeHandshake(0);
 
   await wallet1.sendMessage("wallet2.ethMail", "Hello World!");
+  await wallet1.sendMessage("wallet2.ethMail", "Hello You!");
 
-  
+  const messages = await wallet2.viewMessages("wallet1.ethMail");
+  messages.forEach((message) => {
+    console.log("message:", message.message);
+  });
 }
 
 main();

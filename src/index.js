@@ -253,6 +253,58 @@ class Wallet {
     console.log("Message sent");
   }
 
+
+  async viewMessages(senderEthMail) {
+
+    const senderLookup = await this.ethMail.lookup(senderEthMail);
+    const senderAddress = senderLookup[0];
+    const senderPublicKey = senderLookup[1];
+  
+    const receiverHandshake = await this.ethMail.getHandshakes(this.address, senderAddress);
+  
+    console.log("receiverHandshake:", receiverHandshake)
+    const encryptedReceiverRandomString = JSON.parse(
+      ethers.utils.toUtf8String(receiverHandshake)
+    );
+    console.log(encryptedReceiverRandomString);
+  
+    const decryptedReceiverKey = JSON.parse(
+      await utils.decryptMessage(encryptedReceiverRandomString, this.privateKey)
+    );
+  
+    const decryptedSenderRandomString = decryptedReceiverKey.senderRandomString;
+    const decryptedReceiverRandomString = decryptedReceiverKey.receiverRandomString;
+  
+    const [senderHash, receiverHash] = await Promise.all([
+      utils.poseidonHash(decryptedSenderRandomString),
+      utils.poseidonHash(decryptedReceiverRandomString)
+    ]);
+  
+    const sentMessages = await this.ethMail.getMessages(senderHash);
+    const receivedMessages = await this.ethMail.getMessages(receiverHash);
+  
+  
+    const senderPublicKeyDecoded = ethers.utils.defaultAbiCoder.decode(
+      ["string"],
+      senderPublicKey
+    )[0];
+  
+    const sharedKey = this.computeSharedKey(senderPublicKeyDecoded);
+  
+    const [decryptedSentMessages, decryptedReceivedMessages] = await Promise.all([
+      utils.decryptAllMessages(sharedKey, sentMessages),
+      utils.decryptAllMessages(sharedKey, receivedMessages)
+    ]);
+
+    // const allMessages = [...decryptedSentMessages, ...decryptedReceivedMessages];
+
+  
+    return [...decryptedSentMessages, ...decryptedReceivedMessages];
+  
+  
+
+  }
+
   // utils
   computeSharedKey(publicKey) {
     const dhke = crypto.createECDH("secp256k1");
@@ -277,6 +329,8 @@ class Wallet {
     };
     return JSON.stringify(signedMessage);
   }
+
+
 }
 
 module.exports = {
